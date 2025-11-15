@@ -130,22 +130,14 @@ public class GarageVillagerOwnerMenu  extends AbstractContainerMenu {
         return emeraldBalance;
     }
 
-    public boolean setEmeraldBalance(int value) {
-        int clamped = Math.max(0, value);
-        if (villager != null) {
-            villager.setEmeraldBalance(clamped); // Server-Quelle
-        }
-        emeraldBalance = clamped; // lokale Kopie
-        return true;
-    }
-
     public void collectBalance(ServerPlayer player) {
         if (villager == null) return;
-        if (emeraldBalance <= 0) return;
+        int amount = villager.getEmeraldBalance();
+        if (amount <= 0) return;
 
-        int amount = emeraldBalance;
-        emeraldBalance = 0;
         villager.setEmeraldBalance(0);
+        this.emeraldBalance = 0;
+        this.broadcastChanges();
 
         int remaining = amount;
 
@@ -160,8 +152,8 @@ public class GarageVillagerOwnerMenu  extends AbstractContainerMenu {
 
             remaining -= stackSize;
         }
-
     }
+
 
     @Override
     public void slotsChanged(Container container) {
