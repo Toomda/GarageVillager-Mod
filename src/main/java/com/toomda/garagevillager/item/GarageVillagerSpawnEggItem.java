@@ -4,7 +4,6 @@ import com.toomda.garagevillager.entity.GarageVillagerEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.EntitySpawnReason;
@@ -58,13 +57,11 @@ public class GarageVillagerSpawnEggItem extends SpawnEggItem {
         entity.yHeadRot = entity.getYRot();
         entity.yBodyRot = entity.getYRot();
 
-        // --- Daten aus dem Ei zurück in die Entity ---
         CustomData custom = stack.get(DataComponents.CUSTOM_DATA);
         if (custom != null) {
-            CompoundTag data = custom.copyTag(); // oder ähnlicher Getter, je nach exaktem Namen
+            CompoundTag data = custom.copyTag();
             entity.loadFromItemTag(data);
         } else {
-            // fall-back: neuer Villager -> Owner setzen
             entity.setOwner(player);
         }
 

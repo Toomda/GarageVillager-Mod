@@ -2,8 +2,6 @@ package com.toomda.garagevillager.register;
 
 import com.toomda.garagevillager.GarageVillager;
 import com.toomda.garagevillager.entity.GarageVillagerEntity;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
 import net.neoforged.bus.api.IEventBus;
@@ -14,7 +12,6 @@ import java.util.function.Supplier;
 
 public class ModEntities {
 
-    // Achtung: Spezieller Typ für Entities
     public static final DeferredRegister.Entities ENTITIES =
             DeferredRegister.createEntities(GarageVillager.MODID);
 

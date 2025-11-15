@@ -17,7 +17,6 @@ import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.gui.ConfigurationScreen;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 
-// This class will not load on dedicated servers. Accessing client side code from here is safe.
 @Mod(value = GarageVillager.MODID, dist = Dist.CLIENT)
 @EventBusSubscriber(modid = GarageVillager.MODID, value = Dist.CLIENT)
 public class GarageVillagerClient {

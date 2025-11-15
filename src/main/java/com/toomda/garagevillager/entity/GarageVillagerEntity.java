@@ -17,13 +17,10 @@ import net.minecraft.world.*;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.MerchantMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.CustomData;
@@ -40,7 +37,6 @@ import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.UUID;
 
-// GarageVillagerEntity.java
 public class GarageVillagerEntity extends Villager {
     private UUID ownerUuid;
     private String ownerName = "Garage";   // <--- neu
@@ -71,15 +67,10 @@ public class GarageVillagerEntity extends Villager {
             ItemStack stack = this.inventory.getItem(i);
             int price = this.prices[i];
 
-            // Nur Slots mit Item und Preis > 0
             if (stack.isEmpty() || price <= 0) {
                 continue;
             }
-
-            // Käufer bekommt den GESAMTEN Stack aus dem Slot
-            ItemStack result = stack.copy(); // Count bleibt wie im Slot
-
-            // uses = 0, maxUses = 1 -> genau EIN Trade möglich
+            ItemStack result = stack.copy();
             MerchantOffer offer = new MerchantOffer(
                     new ItemCost(Items.EMERALD, price),
                     result,
@@ -97,7 +88,6 @@ public class GarageVillagerEntity extends Villager {
         if (!(this.level() instanceof ServerLevel serverLevel)) {
             return;
         }
-
         MerchantOffers currentOffers = this.getOffers();
 
         for (ServerPlayer serverPlayer : serverLevel.players()) {
@@ -105,11 +95,6 @@ public class GarageVillagerEntity extends Villager {
                     merchantMenu.getVillager() == this) {
 
                 boolean hasActiveTrade = !merchantMenu.getSlot(2).getItem().isEmpty();
-
-                System.out.println("[GarageVillager] syncOffers (owner-update) -> "
-                        + serverPlayer.getName().getString()
-                        + " active=" + hasActiveTrade);
-
                 if (hasActiveTrade) {
                     continue;
                 }
@@ -129,14 +114,11 @@ public class GarageVillagerEntity extends Villager {
 
 
     public void onTradesUpdatedFromOwner() {
-        System.out.println("[GarageVillager] onTradesUpdatedFromOwner called on " + this);
         this.rebuildOffersFromInventory();
-        this.syncOffersToOpenBuyers_skipActiveTrades(); // Schutz vor aktivem Trade
+        this.syncOffersToOpenBuyers_skipActiveTrades();
     }
 
     public void onTradesUpdated() {
-        System.out.println("[GarageVillager] onTradesUpdated called on " + this);
-
         this.rebuildOffersFromInventory();
 
         if (!(this.level() instanceof ServerLevel serverLevel)) {
@@ -146,13 +128,7 @@ public class GarageVillagerEntity extends Villager {
         for (ServerPlayer serverPlayer : serverLevel.players()) {
             if (serverPlayer.containerMenu instanceof GarageMerchantMenu merchantMenu &&
                     merchantMenu.getVillager() == this) {
-
-                System.out.println("[GarageVillager] sending offers to " + serverPlayer.getName().getString());
-
                 boolean hasActiveTrade = !merchantMenu.getSlot(2).getItem().isEmpty();
-
-                System.out.println("[GarageVillager] has active trade " + hasActiveTrade);
-
                 if(!hasActiveTrade)
                 {
                     serverPlayer.sendMerchantOffers(
@@ -173,9 +149,6 @@ public class GarageVillagerEntity extends Villager {
     @Override
     public void notifyTrade(MerchantOffer offer) {
         super.notifyTrade(offer);
-
-        System.out.println("[GarageVillager] Notifying trade");
-
         int emeraldsPaid = 0;
 
         ItemStack costA = offer.getCostA();
@@ -194,15 +167,10 @@ public class GarageVillagerEntity extends Villager {
 
         Integer slotIndex = this.offerToSlot.get(offer);
         if (slotIndex != null) {
-            // Item & Preis aus deinem Storage entfernen
             this.inventory.setItem(slotIndex, ItemStack.EMPTY);
             this.prices[slotIndex] = 0;
         }
     }
-
-
-
-
 
 
     public int getEmeraldBalance() {
@@ -285,7 +253,7 @@ public class GarageVillagerEntity extends Villager {
 
     @Override
     protected void registerGoals() {
-        // KEINE normalen Goals -> keine Bewegung
+
     }
 
     @Override
@@ -295,12 +263,8 @@ public class GarageVillagerEntity extends Villager {
         if (!level().isClientSide()) {
             boolean isOwner = ownerUuid != null && ownerUuid.equals(player.getUUID());
 
-            // Owner + Spawn-Ei -> einsammeln etc.
             if (isOwner && stack.is(ModItems.GARAGE_VILLAGER_SPAWN_EGG.get())) {
-                // 1) Aktuellen Zustand der Entity in ein Tag schreiben
                 CompoundTag data = this.saveToItemTag();
-
-                // 2) Falls das Ei gestackt ist, erzeugen wir ein einzelnes Ei mit Daten
                 if (stack.getCount() > 1) {
                     ItemStack single = stack.copyWithCount(1);
                     single.set(DataComponents.CUSTOM_DATA, CustomData.of(data));
@@ -316,7 +280,6 @@ public class GarageVillagerEntity extends Villager {
                 return InteractionResult.CONSUME;
             }
 
-            // Owner -> dein Owner-GUI
             if (isOwner && player instanceof ServerPlayer serverPlayer) {
                 serverPlayer.openMenu(new SimpleMenuProvider(
                         (containerId, playerInventory, p) ->
@@ -330,18 +293,16 @@ public class GarageVillagerEntity extends Villager {
                 this.setTradingPlayer(serverPlayer);
                 this.rebuildOffersFromInventory();
 
-                // 2) MerchantMenu öffnen – aber mit unserem GarageMerchantMenu
                 var optionalId = serverPlayer.openMenu(new SimpleMenuProvider(
                         (containerId, inv, p) -> new GarageMerchantMenu(containerId, inv, this),
                         this.getDisplayName()
                 ));
 
-                // 3) Wenn erfolgreich geöffnet, Offers zum Client schicken
                 optionalId.ifPresent(id -> {
                     serverPlayer.sendMerchantOffers(
                             id,
                             this.getOffers(),
-                            1, // Level-Anzeige
+                            1,
                             this.getVillagerXp(),
                             this.showProgressBar(),
                             this.canRestock()
@@ -381,7 +342,7 @@ public class GarageVillagerEntity extends Villager {
 
     public void setOwner(Player player) {
         this.ownerUuid = player.getUUID();
-        this.ownerName = player.getName().getString();   // Namen merken
+        this.ownerName = player.getName().getString();
         setCustomName(Component.literal(this.ownerName + "'s Garage Sale"));
         setCustomNameVisible(true);
     }
@@ -394,18 +355,15 @@ public class GarageVillagerEntity extends Villager {
         if (ownerUuid != null) {
             out.putString("Owner", ownerUuid.toString());
         }
-        out.putString("OwnerName", this.ownerName); // <--- neu
+        out.putString("OwnerName", this.ownerName);
 
-        // Inventory -> NonNullList -> ContainerHelper.saveAllItems
         NonNullList<ItemStack> items =
                 NonNullList.withSize(inventory.getContainerSize(), ItemStack.EMPTY);
         for (int i = 0; i < inventory.getContainerSize(); i++) {
             items.set(i, inventory.getItem(i));
         }
-        // Schreibt wie früher direkt in die Entity-Daten
         ContainerHelper.saveAllItems(out, items);
 
-        // Prices + EmeraldBalance
         out.putIntArray("Prices", prices);
         out.putInt("EmeraldBalance", emeraldBalance);
     }
@@ -414,7 +372,6 @@ public class GarageVillagerEntity extends Villager {
     protected void readAdditionalSaveData(ValueInput in) {
         super.readAdditionalSaveData(in);
 
-        // Owner laden
         in.getString("Owner").ifPresent(s -> {
             try {
                 ownerUuid = UUID.fromString(s);
@@ -430,7 +387,6 @@ public class GarageVillagerEntity extends Villager {
             this.setCustomNameVisible(true);
         }
 
-        // Inventory laden
         NonNullList<ItemStack> items =
                 NonNullList.withSize(inventory.getContainerSize(), ItemStack.EMPTY);
         ContainerHelper.loadAllItems(in, items);
@@ -438,8 +394,6 @@ public class GarageVillagerEntity extends Villager {
         for (int i = 0; i < inventory.getContainerSize(); i++) {
             inventory.setItem(i, items.get(i));
         }
-
-        // Prices
         in.getIntArray("Prices").ifPresent(loaded -> {
             Arrays.fill(this.prices, 0);
             System.arraycopy(
@@ -449,7 +403,6 @@ public class GarageVillagerEntity extends Villager {
             );
         });
 
-        // EmeraldBalance
         emeraldBalance = in.getIntOr("EmeraldBalance", 0);
         this.rebuildOffersFromInventory();
     }
@@ -457,13 +410,11 @@ public class GarageVillagerEntity extends Villager {
     public CompoundTag saveToItemTag() {
         CompoundTag tag = new CompoundTag();
 
-        // --- Owner ---
         if (ownerUuid != null) {
             tag.putString("Owner", ownerUuid.toString());
         }
-        tag.putString("OwnerName", this.ownerName); // <--- neu
+        tag.putString("OwnerName", this.ownerName);
 
-        // --- Inventar -> ListTag ("Items") ---
         ListTag itemsTag = new ListTag();
         for (int i = 0; i < inventory.getContainerSize(); i++) {
             ItemStack stack = inventory.getItem(i);
@@ -479,17 +430,13 @@ public class GarageVillagerEntity extends Villager {
             }
         }
         tag.put("Items", itemsTag);
-
-        // --- Preise + Emeralds ---
         tag.putIntArray("Prices", this.prices);
         tag.putInt("EmeraldBalance", this.emeraldBalance);
 
         return tag;
     }
 
-    // Tag aus dem Item-Ei wieder in die Entity laden
     public void loadFromItemTag(CompoundTag tag) {
-        // --- Owner laden ---
         if (tag.contains("Owner")) {
             try {
                 this.ownerUuid = UUID.fromString(tag.getStringOr("Owner", ""));
@@ -507,7 +454,6 @@ public class GarageVillagerEntity extends Villager {
             this.setCustomNameVisible(true);
         }
 
-        // --- Inventar laden ---
         inventory.clearContent();
         ListTag itemsTag = tag.getListOrEmpty("Items");
         for (int i = 0; i < itemsTag.size(); i++) {
@@ -525,7 +471,6 @@ public class GarageVillagerEntity extends Villager {
             }
         }
 
-        // --- Preise ---
         int[] loadedPrices = tag.getIntArray("Prices").orElse(new int[0]);
         Arrays.fill(this.prices, 0);
         System.arraycopy(
@@ -534,12 +479,9 @@ public class GarageVillagerEntity extends Villager {
                 Math.min(loadedPrices.length, this.prices.length)
         );
 
-        // --- Emerald-Balance ---
         this.emeraldBalance = tag.getIntOr("EmeraldBalance", 0);
     }
 
-
-    // Optional kleine Helfer-Methode:
     private String getOwnerNameForDisplay() {
         return this.ownerName;
     }

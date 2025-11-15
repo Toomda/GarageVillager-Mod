@@ -8,7 +8,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
@@ -21,8 +20,6 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-
-import javax.swing.text.Style;
 
 public class GarageVillagerOwnerScreen extends AbstractContainerScreen<GarageVillagerOwnerMenu> {
     private static final ResourceLocation TEXTURE =
@@ -46,7 +43,6 @@ public class GarageVillagerOwnerScreen extends AbstractContainerScreen<GarageVil
     protected void init() {
         super.init();
 
-        String collectText = "Collect";
         int buttonWidth = 50;
         int buttonHeight = 15;
 
@@ -72,9 +68,9 @@ public class GarageVillagerOwnerScreen extends AbstractContainerScreen<GarageVil
         int y = (this.height - this.imageHeight) / 2;
 
         float u0 = 0f;
-        float u1 = this.imageWidth / 256f;   // 176 / 256
+        float u1 = this.imageWidth / 256f;
         float v0 = 0f;
-        float v1 = this.imageHeight / 256f;  // 222 / 256
+        float v1 = this.imageHeight / 256f;
 
         guiGraphics.blit(
                 TEXTURE,
@@ -108,7 +104,7 @@ public class GarageVillagerOwnerScreen extends AbstractContainerScreen<GarageVil
 
     @Override
     public boolean mouseClicked(MouseButtonEvent mouseButtonEvent, boolean p_432883_) {
-        if (mouseButtonEvent.button() == 0) { // Left click
+        if (mouseButtonEvent.button() == 0) {
             int slotsToRender = 17;
             for (int i = 0; i < slotsToRender; i++) {
                 Slot slot = this.menu.slots.get(i);
@@ -125,21 +121,19 @@ public class GarageVillagerOwnerScreen extends AbstractContainerScreen<GarageVil
                 int plusX = emeraldX + 11;
                 int plusY = emeraldY + 2;
 
-                // --- '-' klick ---
                 if (mouseButtonEvent.x() >= minusX && mouseButtonEvent.x() <= minusX + 7 &&
                         mouseButtonEvent.y() >= minusY && mouseButtonEvent.y() <= minusY + 9) {
 
                     int current = menu.getPrice(i);
                     int newPrice = Math.max(0, current - 1);
 
-                    if (menu.setPrice(i, newPrice)) {              // Client-Vorschau
-                        ModNetworking.sendSetPrice(menu.containerId, i, newPrice); // Server sync
+                    if (menu.setPrice(i, newPrice)) {
+                        ModNetworking.sendSetPrice(menu.containerId, i, newPrice);
                         playClickSound();
                     }
                     return true;
                 }
 
-                // --- '+' klick ---
                 if (mouseButtonEvent.x() >= plusX && mouseButtonEvent.x() <= plusX + 7 &&
                         mouseButtonEvent.y() >= plusY && mouseButtonEvent.y() <= plusY + 9) {
 
@@ -166,7 +160,6 @@ public class GarageVillagerOwnerScreen extends AbstractContainerScreen<GarageVil
             }
         }
 
-        // Klick an EditBox weitergeben, falls vorhanden
         if (priceField != null && priceField.mouseClicked(mouseButtonEvent, p_432883_)) {
             return true;
         }
@@ -252,7 +245,6 @@ public class GarageVillagerOwnerScreen extends AbstractContainerScreen<GarageVil
 
                 menu.setPrice(editingSlot, clamped);
 
-                // IMMER an den Server schicken
                 ModNetworking.sendSetPrice(menu.containerId, editingSlot, clamped);
                 playClickSound();
             } catch (NumberFormatException ignored) {
@@ -291,7 +283,6 @@ public class GarageVillagerOwnerScreen extends AbstractContainerScreen<GarageVil
         for (int i = 0; i < slotsToRender; i++) {
             Slot slot = this.menu.slots.get(i);
 
-            // Screen-Koordinaten (!)
             int slotScreenX = this.leftPos + slot.x;
             int slotScreenY = this.topPos + slot.y;
 
@@ -301,15 +292,12 @@ public class GarageVillagerOwnerScreen extends AbstractContainerScreen<GarageVil
             int price = this.menu.getPrice(i);
             String priceText = String.valueOf(price);
 
-            // Emerald + kleine Stack-Zahl
             renderSmallItemWithCount(guiGraphics, emeraldStack, emeraldX, emeraldY, 0.6f, priceText);
 
-            // '-' links vom Emerald
             int minusX = emeraldX - 5;
             int minusY = emeraldY + 2;
             guiGraphics.drawString(this.font, "-", minusX, minusY, 0xFFFF5555, false);
 
-            // '+' rechts, leicht höher gezogen
             int plusX = emeraldX + 11;
             int plusY = emeraldY + 2;
             guiGraphics.drawString(this.font, "+", plusX, plusY, 0xFF55FF55, false);

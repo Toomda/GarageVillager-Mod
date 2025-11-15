@@ -38,7 +38,6 @@ public class ModNetworking {
                         int price = Math.max(0, payload.price());
 
                         menu.setPrice(slot, price);
-                        // DataSlots syncen zurück zum Client
                     });
                 }
         );

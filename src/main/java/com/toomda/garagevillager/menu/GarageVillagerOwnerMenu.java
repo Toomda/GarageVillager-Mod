@@ -2,7 +2,6 @@ package com.toomda.garagevillager.menu;
 
 import com.toomda.garagevillager.entity.GarageVillagerEntity;
 import com.toomda.garagevillager.register.ModMenus;
-import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
 import net.minecraft.world.SimpleContainer;
@@ -68,7 +67,6 @@ public class GarageVillagerOwnerMenu  extends AbstractContainerMenu {
 
         int playerInvY = 140;
 
-        // Main inventory 3x9
         for (int row = 0; row < 3; ++row) {
             for (int col = 0; col < 9; ++col) {
                 this.addSlot(new Slot(playerInv, col + row * 9 + 9,
@@ -77,7 +75,6 @@ public class GarageVillagerOwnerMenu  extends AbstractContainerMenu {
             }
         }
 
-        // Hotbar
         for (int col = 0; col < 9; ++col) {
             this.addSlot(new Slot(playerInv, col,
                     8 + col * 18,
@@ -164,30 +161,6 @@ public class GarageVillagerOwnerMenu  extends AbstractContainerMenu {
         }
     }
 
-
-    public boolean changePrice(int slotIndex, int delta) {
-        if (slotIndex < 0 || slotIndex >= prices.length) {
-            return false;
-        }
-
-        int current = prices[slotIndex];
-        int newPrice = Math.max(0, current + delta); // nie unter 0
-
-        if (newPrice == current) {
-            // nichts geändert (z.B. von 0 auf -1 versucht)
-            return false;
-        }
-
-        prices[slotIndex] = newPrice;
-
-        if (villager != null) {
-            villager.setPrice(slotIndex, newPrice);
-            villager.onTradesUpdatedFromOwner();
-        }
-
-        return true;
-    }
-
     public int getPrice(int slotIndex) {
         if (slotIndex < 0 || slotIndex >= prices.length) {
             return 0;
@@ -211,7 +184,7 @@ public class GarageVillagerOwnerMenu  extends AbstractContainerMenu {
 
         if (villager != null) {
             villager.setPrice(slotIndex, newPrice);
-            villager.onTradesUpdatedFromOwner(); // 🔥 wichtig für Live-Update beim Käufer
+            villager.onTradesUpdatedFromOwner();
         }
 
         return true;
@@ -221,10 +194,6 @@ public class GarageVillagerOwnerMenu  extends AbstractContainerMenu {
     @Override
     public ItemStack quickMoveStack(Player player, int i) {
         return ItemStack.EMPTY;
-    }
-
-    public GarageVillagerEntity getVillager() {
-        return villager;
     }
 
     @Override

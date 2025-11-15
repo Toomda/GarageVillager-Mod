@@ -17,7 +17,6 @@ import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 
-// The value here should match an entry in the META-INF/neoforge.mods.toml file
 @Mod(GarageVillager.MODID)
 public class GarageVillager {
     public static final String MODID = "garagevillager";
@@ -26,7 +25,6 @@ public class GarageVillager {
     public GarageVillager(IEventBus modEventBus, ModContainer modContainer) {
         modEventBus.addListener(this::commonSetup);
         NeoForge.EVENT_BUS.register(this);
-        modEventBus.addListener(this::addCreative);
         modEventBus.addListener(ModEntityAttributes::registerAttributes);
 
         ModEntities.register(modEventBus);
@@ -36,20 +34,11 @@ public class GarageVillager {
     }
 
     private void commonSetup(FMLCommonSetupEvent event) {
-
         LOGGER.info("HELLO FROM COMMON SETUP");
-
     }
 
-    // Add the example block item to the building blocks tab
-    private void addCreative(BuildCreativeModeTabContentsEvent event) {
-
-    }
-
-    // You can use SubscribeEvent and let the Event Bus discover methods to call
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
-        // Do something when the server starts
         LOGGER.info("HELLO from server starting");
     }
 }
