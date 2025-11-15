@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "EEE",
+    "EVE",
+    "ECE"
+  ],
+  "key": {
+    "E": "minecraft:emerald_block",
+    "V": "minecraft:egg",
+    "C": "minecraft:chest"
+  },
+  "result": {
+    "id": "garagevillager:garage_villager_spawn_egg",
+    "count": 1
+  }
+}

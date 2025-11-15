@@ -46,7 +46,6 @@ public class GarageVillagerSpawnEggItem extends SpawnEggItem {
 
         ItemStack stack = ctx.getItemInHand();
 
-        // 1) Herausfinden, wem der Villager gehören soll
         UUID targetOwner = null;
 
         CustomData custom = stack.get(DataComponents.CUSTOM_DATA);
@@ -58,7 +57,6 @@ public class GarageVillagerSpawnEggItem extends SpawnEggItem {
                     try {
                         targetOwner = UUID.fromString(ownerString);
                     } catch (IllegalArgumentException ignored) {
-                        // Fallback gleich unten auf Spieler
                     }
                 }
             }
@@ -119,10 +117,6 @@ public class GarageVillagerSpawnEggItem extends SpawnEggItem {
         }
 
         serverLevel.addFreshEntity(entity);
-
-        if (!player.getAbilities().instabuild) {
-            stack.shrink(1);
-        }
 
         return InteractionResult.CONSUME;
     }

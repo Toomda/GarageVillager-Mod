@@ -4,6 +4,7 @@ import com.toomda.garagevillager.register.ModEntities;
 import com.toomda.garagevillager.register.ModEntityAttributes;
 import com.toomda.garagevillager.register.ModItems;
 import com.toomda.garagevillager.register.ModMenus;
+import net.minecraft.world.item.CreativeModeTabs;
 import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
@@ -24,6 +25,7 @@ public class GarageVillager {
 
     public GarageVillager(IEventBus modEventBus, ModContainer modContainer) {
         modEventBus.addListener(this::commonSetup);
+        modEventBus.addListener(this::addToCreativeTabs);
         NeoForge.EVENT_BUS.register(this);
         modEventBus.addListener(ModEntityAttributes::registerAttributes);
 
@@ -34,6 +36,12 @@ public class GarageVillager {
 
     private void commonSetup(FMLCommonSetupEvent event) {
         LOGGER.info("HELLO FROM COMMON SETUP");
+    }
+
+    public void addToCreativeTabs(BuildCreativeModeTabContentsEvent event) {
+        if(event.getTabKey() == CreativeModeTabs.SPAWN_EGGS) {
+            event.accept(ModItems.GARAGE_VILLAGER_SPAWN_EGG.get());
+        }
     }
 
     @SubscribeEvent

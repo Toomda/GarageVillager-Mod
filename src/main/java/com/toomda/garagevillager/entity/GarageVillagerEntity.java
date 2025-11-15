@@ -31,7 +31,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.IdentityHashMap;
@@ -46,8 +45,6 @@ public class GarageVillagerEntity extends Villager {
     private int emeraldBalance = 0;
     private final MerchantOffers offers = new MerchantOffers();
     private final Map<MerchantOffer, Integer> offerToSlot = new IdentityHashMap<>();
-
-
 
     public GarageVillagerEntity(EntityType<? extends GarageVillagerEntity> type, Level level) {
         super(type, level);
@@ -110,8 +107,6 @@ public class GarageVillagerEntity extends Villager {
             }
         }
     }
-
-
 
     public void onTradesUpdatedFromOwner() {
         this.rebuildOffersFromInventory();
@@ -186,23 +181,20 @@ public class GarageVillagerEntity extends Villager {
             if (serverPlayer.containerMenu instanceof GarageMerchantMenu merchantMenu &&
                     merchantMenu.getVillager() == this) {
 
-                // Trade-Slots im Menu leeren (Input1, Input2, Result)
                 merchantMenu.getSlot(0).setByPlayer(ItemStack.EMPTY);
                 merchantMenu.getSlot(1).setByPlayer(ItemStack.EMPTY);
                 merchantMenu.getSlot(2).setByPlayer(ItemStack.EMPTY);
 
-                // Auswahl zurücksetzen (immer erster Trade, falls vorhanden)
                 merchantMenu.setSelectionHint(0);
 
                 merchantMenu.broadcastChanges();
 
-                // Neue Offers schicken – ohne Level/Novice
                 serverPlayer.sendMerchantOffers(
                         merchantMenu.containerId,
                         currentOffers,
-                        0,      // Level egal
-                        0,      // XP egal
-                        false,  // kein ProgressBar/Levelanzeige
+                        0,
+                        0,
+                        false,
                         false
                 );
             }
@@ -322,7 +314,7 @@ public class GarageVillagerEntity extends Villager {
                 serverPlayer.openMenu(new SimpleMenuProvider(
                         (containerId, playerInventory, p) ->
                                 new GarageVillagerOwnerMenu(containerId, playerInventory, this),
-                        Component.literal(player.getName().getString() + "'s Garage Sale")
+                        Component.literal(player.getName().getString())
                 ));
                 return InteractionResult.CONSUME;
             }
@@ -381,7 +373,7 @@ public class GarageVillagerEntity extends Villager {
     public void setOwner(Player player) {
         this.ownerUuid = player.getUUID();
         this.ownerName = player.getName().getString();
-        setCustomName(Component.literal(this.ownerName + "'s Garage Sale"));
+        setCustomName(Component.literal(this.ownerName));
         setCustomNameVisible(true);
     }
 
@@ -421,7 +413,7 @@ public class GarageVillagerEntity extends Villager {
         this.ownerName = in.getStringOr("OwnerName", "Garage");
 
         if (this.ownerUuid != null) {
-            this.setCustomName(Component.literal(this.ownerName + "'s Garage Sale"));
+            this.setCustomName(Component.literal(this.ownerName));
             this.setCustomNameVisible(true);
         }
 
@@ -488,7 +480,7 @@ public class GarageVillagerEntity extends Villager {
         this.ownerName = tag.getStringOr("OwnerName", "Garage");
 
         if (this.ownerUuid != null) {
-            this.setCustomName(Component.literal(getOwnerNameForDisplay() + "'s Garage Sale"));
+            this.setCustomName(Component.literal(getOwnerNameForDisplay()));
             this.setCustomNameVisible(true);
         }
 
