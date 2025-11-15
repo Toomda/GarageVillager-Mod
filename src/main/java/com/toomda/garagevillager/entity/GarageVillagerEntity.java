@@ -31,6 +31,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.IdentityHashMap;
@@ -57,6 +58,10 @@ public class GarageVillagerEntity extends Villager {
     @Override
     public MerchantOffers getOffers() {
         return this.offers;
+    }
+
+    public UUID getOwnerUuid() {
+        return ownerUuid;
     }
 
     public void rebuildOffersFromInventory() {
@@ -94,18 +99,13 @@ public class GarageVillagerEntity extends Villager {
             if (serverPlayer.containerMenu instanceof GarageMerchantMenu merchantMenu &&
                     merchantMenu.getVillager() == this) {
 
-                boolean hasActiveTrade = !merchantMenu.getSlot(2).getItem().isEmpty();
-                if (hasActiveTrade) {
-                    continue;
-                }
-
                 serverPlayer.sendMerchantOffers(
                         merchantMenu.containerId,
                         currentOffers,
-                        1,
+                        0,
                         this.getVillagerXp(),
-                        this.showProgressBar(),
-                        this.canRestock()
+                        false,
+                        false
                 );
             }
         }
@@ -134,10 +134,10 @@ public class GarageVillagerEntity extends Villager {
                     serverPlayer.sendMerchantOffers(
                             merchantMenu.containerId,
                             this.getOffers(),
-                            1,
-                            this.getVillagerXp(),
-                            this.showProgressBar(),
-                            this.canRestock()
+                            0,
+                            0,
+                            false,
+                            false
                     );
                 }
             }
@@ -170,7 +170,45 @@ public class GarageVillagerEntity extends Villager {
             this.inventory.setItem(slotIndex, ItemStack.EMPTY);
             this.prices[slotIndex] = 0;
         }
+
+        this.rebuildOffersFromInventory();
+        syncOffersToOpenBuyers_afterPurchase();
     }
+
+    private void syncOffersToOpenBuyers_afterPurchase() {
+        if (!(this.level() instanceof ServerLevel serverLevel)) {
+            return;
+        }
+
+        MerchantOffers currentOffers = this.getOffers();
+
+        for (ServerPlayer serverPlayer : serverLevel.players()) {
+            if (serverPlayer.containerMenu instanceof GarageMerchantMenu merchantMenu &&
+                    merchantMenu.getVillager() == this) {
+
+                // Trade-Slots im Menu leeren (Input1, Input2, Result)
+                merchantMenu.getSlot(0).setByPlayer(ItemStack.EMPTY);
+                merchantMenu.getSlot(1).setByPlayer(ItemStack.EMPTY);
+                merchantMenu.getSlot(2).setByPlayer(ItemStack.EMPTY);
+
+                // Auswahl zurücksetzen (immer erster Trade, falls vorhanden)
+                merchantMenu.setSelectionHint(0);
+
+                merchantMenu.broadcastChanges();
+
+                // Neue Offers schicken – ohne Level/Novice
+                serverPlayer.sendMerchantOffers(
+                        merchantMenu.containerId,
+                        currentOffers,
+                        0,      // Level egal
+                        0,      // XP egal
+                        false,  // kein ProgressBar/Levelanzeige
+                        false
+                );
+            }
+        }
+    }
+
 
 
     public int getEmeraldBalance() {
@@ -302,10 +340,10 @@ public class GarageVillagerEntity extends Villager {
                     serverPlayer.sendMerchantOffers(
                             id,
                             this.getOffers(),
-                            1,
-                            this.getVillagerXp(),
-                            this.showProgressBar(),
-                            this.canRestock()
+                            0,
+                            0,
+                            false,
+                            false
                     );
                 });
 

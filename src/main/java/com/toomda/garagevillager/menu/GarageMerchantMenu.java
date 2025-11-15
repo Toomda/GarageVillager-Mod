@@ -28,4 +28,5 @@ public class GarageMerchantMenu extends MerchantMenu {
         super.removed(player);
         this.garageVillager.setTradingPlayer(null);
     }
+
 }

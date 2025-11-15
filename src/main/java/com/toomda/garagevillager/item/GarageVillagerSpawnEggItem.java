@@ -4,6 +4,7 @@ import com.toomda.garagevillager.entity.GarageVillagerEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.EntitySpawnReason;
@@ -14,6 +15,9 @@ import net.minecraft.world.item.SpawnEggItem;
 import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
+
+import java.util.UUID;
 
 public class GarageVillagerSpawnEggItem extends SpawnEggItem {
 
@@ -27,7 +31,9 @@ public class GarageVillagerSpawnEggItem extends SpawnEggItem {
     @Override
     public InteractionResult useOn(UseOnContext ctx) {
         Level level = ctx.getLevel();
-        if (level.isClientSide()) return InteractionResult.SUCCESS;
+        if (level.isClientSide()) {
+            return InteractionResult.SUCCESS;
+        }
 
         if (!(level instanceof ServerLevel serverLevel)) {
             return InteractionResult.PASS;
@@ -38,8 +44,56 @@ public class GarageVillagerSpawnEggItem extends SpawnEggItem {
             return InteractionResult.PASS;
         }
 
-        BlockPos pos = ctx.getClickedPos().relative(ctx.getClickedFace());
         ItemStack stack = ctx.getItemInHand();
+
+        // 1) Herausfinden, wem der Villager gehören soll
+        UUID targetOwner = null;
+
+        CustomData custom = stack.get(DataComponents.CUSTOM_DATA);
+        if (custom != null) {
+            CompoundTag data = custom.copyTag();
+            if (data.contains("Owner")) {
+                String ownerString = data.getStringOr("Owner", "");
+                if (!ownerString.isEmpty()) {
+                    try {
+                        targetOwner = UUID.fromString(ownerString);
+                    } catch (IllegalArgumentException ignored) {
+                        // Fallback gleich unten auf Spieler
+                    }
+                }
+            }
+        }
+
+        if (targetOwner == null) {
+            targetOwner = player.getUUID();
+        }
+
+        AABB worldBox = new AABB(
+                -30_000_000, serverLevel.getMinY(), -30_000_000,
+                30_000_000, serverLevel.getMaxY(),  30_000_000
+        );
+
+        UUID finalTargetOwner = targetOwner;
+        boolean alreadyHasVillager = !serverLevel
+                .getEntitiesOfClass(
+                        GarageVillagerEntity.class,
+                        worldBox,
+                        (GarageVillagerEntity villager) -> {
+                            UUID owner = villager.getOwnerUuid();
+                            return owner != null && owner.equals(finalTargetOwner);
+                        }
+                )
+                .isEmpty();
+
+        if (alreadyHasVillager) {
+            player.displayClientMessage(
+                    Component.literal("You already have a Garage Villager! Pick it up before spawning a new one."),
+                    true
+            );
+            return InteractionResult.CONSUME;
+        }
+
+        BlockPos pos = ctx.getClickedPos().relative(ctx.getClickedFace());
 
         GarageVillagerEntity entity = type.create(serverLevel, EntitySpawnReason.SPAWN_ITEM_USE);
         if (entity == null) {
@@ -57,7 +111,6 @@ public class GarageVillagerSpawnEggItem extends SpawnEggItem {
         entity.yHeadRot = entity.getYRot();
         entity.yBodyRot = entity.getYRot();
 
-        CustomData custom = stack.get(DataComponents.CUSTOM_DATA);
         if (custom != null) {
             CompoundTag data = custom.copyTag();
             entity.loadFromItemTag(data);
@@ -73,5 +126,6 @@ public class GarageVillagerSpawnEggItem extends SpawnEggItem {
 
         return InteractionResult.CONSUME;
     }
+
 
 }

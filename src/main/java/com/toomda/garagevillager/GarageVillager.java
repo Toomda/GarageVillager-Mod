@@ -30,7 +30,6 @@ public class GarageVillager {
         ModEntities.register(modEventBus);
         ModItems.register(modEventBus);
         ModMenus.register(modEventBus);
-
     }
 
     private void commonSetup(FMLCommonSetupEvent event) {
