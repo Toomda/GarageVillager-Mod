@@ -2,7 +2,9 @@
   "required": true,
   "package": "com.toomda.garagevillager.mixin",
   "compatibilityLevel": "JAVA_21",
-  "mixins": [],
+  "mixins": [
+    "MerchantResultSlotMixin"
+  ],
   "injectors": {
     "defaultRequire": 1
   },
@@ -10,6 +12,7 @@
     "requireAnnotations": true
   },
   "client": [
-    "MerchantScreenMixin"
+    "MerchantScreenMixin",
+    "MerchantScreenPriceMixin"
   ]
 }

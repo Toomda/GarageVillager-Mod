@@ -32,10 +32,7 @@ import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
 
-import java.util.Arrays;
-import java.util.IdentityHashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 public class GarageVillagerEntity extends Villager {
     private UUID ownerUuid;
@@ -45,6 +42,7 @@ public class GarageVillagerEntity extends Villager {
     private int emeraldBalance = 0;
     private final MerchantOffers offers = new MerchantOffers();
     private final Map<MerchantOffer, Integer> offerToSlot = new IdentityHashMap<>();
+    final int GARAGE_LEVEL = 1337;
 
     public GarageVillagerEntity(EntityType<? extends GarageVillagerEntity> type, Level level) {
         super(type, level);
@@ -65,6 +63,9 @@ public class GarageVillagerEntity extends Villager {
         this.offers.clear();
         this.offerToSlot.clear();
 
+        // Max. Preis: 128 Blöcke à 9 + 0 Emeralds = 1152
+        final int MAX_PRICE = 128 * 9;
+
         for (int i = 0; i < this.inventory.getContainerSize(); i++) {
             ItemStack stack = this.inventory.getItem(i);
             int price = this.prices[i];
@@ -72,19 +73,101 @@ public class GarageVillagerEntity extends Villager {
             if (stack.isEmpty() || price <= 0) {
                 continue;
             }
+
+            // Hart clampen, falls jemand Unsinn setzt
+            if (price > MAX_PRICE) {
+                price = MAX_PRICE;
+                this.prices[i] = MAX_PRICE;
+            }
+
             ItemStack result = stack.copy();
-            MerchantOffer offer = new MerchantOffer(
-                    new ItemCost(Items.EMERALD, price),
-                    result,
-                    1,
-                    0,
-                    0.0F
-            );
+
+            ItemCost costA;
+            ItemCost costB = null;
+
+            if (price <= 64) {
+                // Bis 64: reine Emerald-Zahl
+                costA = new ItemCost(Items.EMERALD, price);
+
+            } else if (price <= (64 * 9 + 64)) {
+                // 65..640: Blöcke + (optional) Emeralds
+                // Blöcke sollen "Mehrheit" sein (wie vorher)
+                int maxBlocks = Math.min(64, price / 9);
+                int blocks = 0;
+                int emeralds = price;
+
+                // so viele Blöcke wie möglich, Rest <= 64 Emeralds
+                for (int b = maxBlocks; b >= 1; b--) {
+                    int rest = price - b * 9;
+                    if (rest >= 0 && rest <= 64) {
+                        blocks = b;
+                        emeralds = rest;
+                        break;
+                    }
+                }
+
+                // Sicherheit: falls wir aus irgendeinem Grund nichts gefunden haben
+                if (blocks == 0) {
+                    // Fallback: reiner Emerald-Preis (sollte in der Praxis nicht passieren)
+                    blocks = 0;
+                    emeralds = Math.min(price, 64);
+                }
+
+                costA = new ItemCost(Items.EMERALD_BLOCK, blocks);
+                if (emeralds > 0) {
+                    costB = new ItemCost(Items.EMERALD, emeralds);
+                }
+
+            } else {
+                // price > 640 -> wir nutzen NUR Blöcke in beiden Slots
+                // Ziel: 9 * totalBlocks >= price, minimaler Overpay
+                int totalBlocks = (price + 8) / 9; // ceil(price / 9)
+                if (totalBlocks > 128) {
+                    totalBlocks = 128;
+                }
+
+                int blocksA = Math.min(64, totalBlocks);
+                int blocksB = totalBlocks - blocksA;
+                if (blocksB < 0) {
+                    blocksB = 0;
+                }
+
+                costA = new ItemCost(Items.EMERALD_BLOCK, blocksA);
+                if (blocksB > 0) {
+                    costB = new ItemCost(Items.EMERALD_BLOCK, blocksB);
+                }
+            }
+
+            int logicalPrice = price;
+
+            MerchantOffer offer;
+            if (costB != null) {
+                offer = new MerchantOffer(
+                        costA,
+                        Optional.of(costB),
+                        result,
+                        1,
+                        logicalPrice, // <-- statt 0
+                        0.0F
+                );
+            } else {
+                offer = new MerchantOffer(
+                        costA,
+                        result,
+                        1,
+                        logicalPrice, // <-- hier: Preis speichern
+                        0.0F
+                );
+            }
 
             this.offers.add(offer);
             this.offerToSlot.put(offer, i);
         }
     }
+
+
+
+
 
     private void syncOffersToOpenBuyers_skipActiveTrades() {
         if (!(this.level() instanceof ServerLevel serverLevel)) {
@@ -99,8 +182,8 @@ public class GarageVillagerEntity extends Villager {
                 serverPlayer.sendMerchantOffers(
                         merchantMenu.containerId,
                         currentOffers,
+                        GARAGE_LEVEL,
                         0,
-                        this.getVillagerXp(),
                         false,
                         false
                 );
@@ -129,7 +212,7 @@ public class GarageVillagerEntity extends Villager {
                     serverPlayer.sendMerchantOffers(
                             merchantMenu.containerId,
                             this.getOffers(),
-                            0,
+                            GARAGE_LEVEL,
                             0,
                             false,
                             false
@@ -144,30 +227,56 @@ public class GarageVillagerEntity extends Villager {
     @Override
     public void notifyTrade(MerchantOffer offer) {
         super.notifyTrade(offer);
-        int emeraldsPaid = 0;
 
-        ItemStack costA = offer.getCostA();
-        if (!costA.isEmpty() && costA.is(Items.EMERALD)) {
-            emeraldsPaid += costA.getCount();
-        }
-
-        ItemStack costB = offer.getCostB();
-        if (!costB.isEmpty() && costB.is(Items.EMERALD)) {
-            emeraldsPaid += costB.getCount();
-        }
-
-        if (emeraldsPaid > 0) {
-            this.addEmeraldBalance(emeraldsPaid);
+        // Only server should modify inventory / balance
+        if (this.level().isClientSide()) {
+            return;
         }
 
         Integer slotIndex = this.offerToSlot.get(offer);
+
         if (slotIndex != null) {
+            int price = this.prices[slotIndex];
+
+            if (price > 0) {
+                // Add only the "logical" price to the villager balance
+                this.addEmeraldBalance(price);
+            }
+
+            // Remove the sold item from the garage inventory
             this.inventory.setItem(slotIndex, ItemStack.EMPTY);
             this.prices[slotIndex] = 0;
         }
 
+        // Rebuild & sync offers for other buyers
         this.rebuildOffersFromInventory();
         syncOffersToOpenBuyers_afterPurchase();
+    }
+
+
+    public int getPriceForOffer(MerchantOffer offer) {
+        Integer idx = this.offerToSlot.get(offer);
+        if (idx == null || idx < 0 || idx >= this.prices.length) {
+            return 0;
+        }
+        return this.prices[idx];
+    }
+
+
+    private void giveEmeraldChange(ServerPlayer player, int change) {
+        int remaining = change;
+
+        while (remaining > 0) {
+            int stackSize = Math.min(remaining, 64);
+            ItemStack refund = new ItemStack(Items.EMERALD, stackSize);
+
+            boolean added = player.getInventory().add(refund);
+            if (!added) {
+                player.drop(refund, false);
+            }
+
+            remaining -= stackSize;
+        }
     }
 
     private void syncOffersToOpenBuyers_afterPurchase() {
@@ -192,7 +301,7 @@ public class GarageVillagerEntity extends Villager {
                 serverPlayer.sendMerchantOffers(
                         merchantMenu.containerId,
                         currentOffers,
-                        0,
+                        GARAGE_LEVEL,
                         0,
                         false,
                         false
@@ -226,8 +335,11 @@ public class GarageVillagerEntity extends Villager {
         if (slot < 0 || slot >= prices.length) {
             return;
         }
-        prices[slot] = Math.max(0, price);
+        int MAX_PRICE = 128 * 9; // 1152
+        int clamped = Math.max(0, Math.min(price, MAX_PRICE));
+        prices[slot] = clamped;
     }
+
 
     @Override
     public boolean isInvulnerable() {
@@ -332,7 +444,7 @@ public class GarageVillagerEntity extends Villager {
                     serverPlayer.sendMerchantOffers(
                             id,
                             this.getOffers(),
-                            0,
+                            GARAGE_LEVEL,
                             0,
                             false,
                             false
