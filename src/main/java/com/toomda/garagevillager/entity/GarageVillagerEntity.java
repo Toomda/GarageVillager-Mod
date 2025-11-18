@@ -3,6 +3,7 @@ package com.toomda.garagevillager.entity;
 import com.mojang.serialization.DataResult;
 import com.toomda.garagevillager.menu.GarageMerchantMenu;
 import com.toomda.garagevillager.menu.GarageVillagerOwnerMenu;
+import com.toomda.garagevillager.register.ModBlocks;
 import com.toomda.garagevillager.register.ModItems;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.component.DataComponents;
@@ -21,6 +22,7 @@ import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.CustomData;
@@ -63,8 +65,8 @@ public class GarageVillagerEntity extends Villager {
         this.offers.clear();
         this.offerToSlot.clear();
 
-        // Max. Preis: 128 Blöcke à 9 + 0 Emeralds = 1152
-        final int MAX_PRICE = 128 * 9;
+        final int MAX_PRICE = 128 * 81; // 10368
+        final Item CORE_ITEM = ModBlocks.EMERALD_CORE_BLOCK.get().asItem();
 
         for (int i = 0; i < this.inventory.getContainerSize(); i++) {
             ItemStack stack = this.inventory.getItem(i);
@@ -74,29 +76,25 @@ public class GarageVillagerEntity extends Villager {
                 continue;
             }
 
-            // Hart clampen, falls jemand Unsinn setzt
             if (price > MAX_PRICE) {
                 price = MAX_PRICE;
                 this.prices[i] = MAX_PRICE;
             }
 
             ItemStack result = stack.copy();
-
             ItemCost costA;
             ItemCost costB = null;
 
             if (price <= 64) {
-                // Bis 64: reine Emerald-Zahl
+                // 1) nur Emeralds
                 costA = new ItemCost(Items.EMERALD, price);
 
             } else if (price <= (64 * 9 + 64)) {
-                // 65..640: Blöcke + (optional) Emeralds
-                // Blöcke sollen "Mehrheit" sein (wie vorher)
+                // 2) 65..640: Blöcke + evtl. Emeralds (wie bisher)
                 int maxBlocks = Math.min(64, price / 9);
                 int blocks = 0;
                 int emeralds = price;
 
-                // so viele Blöcke wie möglich, Rest <= 64 Emeralds
                 for (int b = maxBlocks; b >= 1; b--) {
                     int rest = price - b * 9;
                     if (rest >= 0 && rest <= 64) {
@@ -106,9 +104,7 @@ public class GarageVillagerEntity extends Villager {
                     }
                 }
 
-                // Sicherheit: falls wir aus irgendeinem Grund nichts gefunden haben
                 if (blocks == 0) {
-                    // Fallback: reiner Emerald-Preis (sollte in der Praxis nicht passieren)
                     blocks = 0;
                     emeralds = Math.min(price, 64);
                 }
@@ -118,24 +114,68 @@ public class GarageVillagerEntity extends Villager {
                     costB = new ItemCost(Items.EMERALD, emeralds);
                 }
 
-            } else {
-                // price > 640 -> wir nutzen NUR Blöcke in beiden Slots
-                // Ziel: 9 * totalBlocks >= price, minimaler Overpay
+            } else if (price <= (128 * 9)) {
+                // 3) 641..1152: nur Emerald Blöcke in zwei Slots
                 int totalBlocks = (price + 8) / 9; // ceil(price / 9)
-                if (totalBlocks > 128) {
-                    totalBlocks = 128;
-                }
 
                 int blocksA = Math.min(64, totalBlocks);
                 int blocksB = totalBlocks - blocksA;
-                if (blocksB < 0) {
-                    blocksB = 0;
-                }
+                if (blocksB < 0) blocksB = 0;
 
                 costA = new ItemCost(Items.EMERALD_BLOCK, blocksA);
                 if (blocksB > 0) {
                     costB = new ItemCost(Items.EMERALD_BLOCK, blocksB);
                 }
+
+            } else {
+                // 4) >1152: Core-Block + Block Kombinationen (max. 2 Slots)
+                //    Suche minimalen Wert >= price mit:
+                //    Slot A: Block ODER Core
+                //    Slot B: leer / Block / Core
+                int bestValue = Integer.MAX_VALUE;
+                ItemCost bestA = null;
+                ItemCost bestB = null;
+
+                // Slot A: EmeraldBlock (9) oder Core (81)
+                for (int typeA = 0; typeA < 2; typeA++) {
+                    Item itemA = (typeA == 0) ? Items.EMERALD_BLOCK : CORE_ITEM;
+                    int unitA = (typeA == 0) ? 9 : 81;
+
+                    for (int countA = 1; countA <= 64; countA++) {
+                        int baseA = unitA * countA;
+
+                        // Fall: nur Slot A belegt
+                        if (baseA >= price && baseA < bestValue) {
+                            bestValue = baseA;
+                            bestA = new ItemCost(itemA, countA);
+                            bestB = null;
+                        }
+
+                        // Slot B: nichts, Block oder Core
+                        for (int typeB = 0; typeB < 2; typeB++) {
+                            Item itemB = (typeB == 0) ? Items.EMERALD_BLOCK : CORE_ITEM;
+                            int unitB = (typeB == 0) ? 9 : 81;
+
+                            for (int countB = 1; countB <= 64; countB++) {
+                                int total = baseA + unitB * countB;
+                                if (total >= price && total < bestValue) {
+                                    bestValue = total;
+                                    bestA = new ItemCost(itemA, countA);
+                                    bestB = new ItemCost(itemB, countB);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Sicherheits-Fallback (sollte nie nötig sein)
+                if (bestA == null) {
+                    bestA = new ItemCost(CORE_ITEM, 64);
+                    bestB = new ItemCost(CORE_ITEM, 64);
+                }
+
+                costA = bestA;
+                costB = bestB;
             }
 
             int logicalPrice = price;
@@ -147,7 +187,7 @@ public class GarageVillagerEntity extends Villager {
                         Optional.of(costB),
                         result,
                         1,
-                        logicalPrice, // <-- statt 0
+                        logicalPrice,
                         0.0F
                 );
             } else {
@@ -155,7 +195,7 @@ public class GarageVillagerEntity extends Villager {
                         costA,
                         result,
                         1,
-                        logicalPrice, // <-- hier: Preis speichern
+                        logicalPrice,
                         0.0F
                 );
             }
@@ -164,6 +204,7 @@ public class GarageVillagerEntity extends Villager {
             this.offerToSlot.put(offer, i);
         }
     }
+
 
 
 
@@ -335,10 +376,11 @@ public class GarageVillagerEntity extends Villager {
         if (slot < 0 || slot >= prices.length) {
             return;
         }
-        int MAX_PRICE = 128 * 9; // 1152
+        int MAX_PRICE = 128 * 81; // 10368
         int clamped = Math.max(0, Math.min(price, MAX_PRICE));
         prices[slot] = clamped;
     }
+
 
 
     @Override

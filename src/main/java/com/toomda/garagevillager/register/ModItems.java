@@ -2,6 +2,8 @@ package com.toomda.garagevillager.register;
 
 import com.toomda.garagevillager.GarageVillager;
 import com.toomda.garagevillager.item.GarageVillagerSpawnEggItem;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.SpawnEggItem;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredItem;

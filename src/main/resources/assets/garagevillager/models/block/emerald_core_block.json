@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/cube_all",
+  "textures": {
+    "all": "garagevillager:block/emerald_core_block"
+  }
+}

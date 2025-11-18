@@ -1,9 +1,6 @@
 package com.toomda.garagevillager;
 
-import com.toomda.garagevillager.register.ModEntities;
-import com.toomda.garagevillager.register.ModEntityAttributes;
-import com.toomda.garagevillager.register.ModItems;
-import com.toomda.garagevillager.register.ModMenus;
+import com.toomda.garagevillager.register.*;
 import net.minecraft.world.item.CreativeModeTabs;
 import org.slf4j.Logger;
 
@@ -29,6 +26,7 @@ public class GarageVillager {
         NeoForge.EVENT_BUS.register(this);
         modEventBus.addListener(ModEntityAttributes::registerAttributes);
 
+        ModBlocks.register(modEventBus);
         ModEntities.register(modEventBus);
         ModItems.register(modEventBus);
         ModMenus.register(modEventBus);

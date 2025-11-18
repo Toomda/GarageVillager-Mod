@@ -1,6 +1,7 @@
 package com.toomda.garagevillager.mixin;
 
 import com.toomda.garagevillager.entity.GarageVillagerEntity;
+import com.toomda.garagevillager.register.ModBlocks;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
@@ -8,6 +9,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.MerchantContainer;
 import net.minecraft.world.inventory.MerchantResultSlot;
 import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.trading.Merchant;
@@ -68,21 +70,27 @@ public abstract class MerchantResultSlotMixin extends Slot {
         // 2) "Bezahlten Wert" aus den Offer-Kosten berechnen
         int paidValue = 0;
 
-        ItemStack costA = offer.getCostA();
-        if (!costA.isEmpty()) {
-            if (costA.is(Items.EMERALD)) {
-                paidValue += costA.getCount();
-            } else if (costA.is(Items.EMERALD_BLOCK)) {
-                paidValue += costA.getCount() * 9;
+        Item coreItem = ModBlocks.EMERALD_CORE_BLOCK.get().asItem();
+
+        ItemStack costAStack = offer.getCostA();
+        if (!costAStack.isEmpty()) {
+            if (costAStack.is(Items.EMERALD)) {
+                paidValue += costAStack.getCount();
+            } else if (costAStack.is(Items.EMERALD_BLOCK)) {
+                paidValue += costAStack.getCount() * 9;
+            } else if (costAStack.is(coreItem)) {
+                paidValue += costAStack.getCount() * 81;
             }
         }
 
-        ItemStack costB = offer.getCostB();
-        if (!costB.isEmpty()) {
-            if (costB.is(Items.EMERALD)) {
-                paidValue += costB.getCount();
-            } else if (costB.is(Items.EMERALD_BLOCK)) {
-                paidValue += costB.getCount() * 9;
+        ItemStack costBStack = offer.getCostB();
+        if (!costBStack.isEmpty()) {
+            if (costBStack.is(Items.EMERALD)) {
+                paidValue += costBStack.getCount();
+            } else if (costBStack.is(Items.EMERALD_BLOCK)) {
+                paidValue += costBStack.getCount() * 9;
+            } else if (costBStack.is(coreItem)) {
+                paidValue += costBStack.getCount() * 81;
             }
         }
 

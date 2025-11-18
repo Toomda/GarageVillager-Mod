@@ -1,5 +1,6 @@
 package com.toomda.garagevillager.mixin;
 
+import com.toomda.garagevillager.register.ModBlocks;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.MerchantScreen;
@@ -122,6 +123,8 @@ public abstract class MerchantScreenPriceMixin
         if (stack.isEmpty()) return 0;
         if (stack.is(Items.EMERALD)) return stack.getCount();
         if (stack.is(Items.EMERALD_BLOCK)) return stack.getCount() * 9;
+        if (stack.is(ModBlocks.EMERALD_CORE_BLOCK.get().asItem())) return stack.getCount() * 81;
         return 0;
     }
+
 }

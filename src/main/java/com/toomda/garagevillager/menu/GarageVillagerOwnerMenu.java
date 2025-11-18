@@ -1,6 +1,7 @@
 package com.toomda.garagevillager.menu;
 
 import com.toomda.garagevillager.entity.GarageVillagerEntity;
+import com.toomda.garagevillager.register.ModBlocks;
 import com.toomda.garagevillager.register.ModMenus;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
@@ -10,6 +11,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.DataSlot;
 import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
@@ -129,18 +131,64 @@ public class GarageVillagerOwnerMenu  extends AbstractContainerMenu {
 
     public void collectBalance(ServerPlayer player) {
         if (villager == null) return;
-        int amount = villager.getEmeraldBalance();
+
+        int amount = villager.getEmeraldBalance(); // in Emerald-Einheiten
         if (amount <= 0) return;
 
+        // Balance leeren
         villager.setEmeraldBalance(0);
         this.emeraldBalance = 0;
         this.broadcastChanges();
 
-        int remaining = amount;
+        // Bis 64: nur Emeralds
+        if (amount <= 64) {
+            giveStacks(player, Items.EMERALD, amount);
+            return;
+        }
+
+        // Ab hier: Blöcke / Core-Blöcke benutzen
+        final Item CORE_ITEM = ModBlocks.EMERALD_CORE_BLOCK.get().asItem();
+
+        int cores = 0;
+        int blocks = 0;
+        int emeralds = 0;
+
+        int potentialBlocks = amount / 9;
+
+        if (potentialBlocks <= 64) {
+            // Fall 2: 65..576 Emeralds -> nur Emeraldblöcke + Rest-Emeralds
+            blocks = potentialBlocks;
+            emeralds = amount - blocks * 9;
+        } else {
+            // Fall 3: mehr als 64 Blöcke nötig -> Core + Blöcke + Emeralds
+
+            // Maximal viele Core-Blöcke (81 Emeralds pro Block)
+            cores = amount / 81;
+            int remainder = amount % 81;
+
+            // Vom Rest maximal viele Emeraldblöcke (9 Emeralds pro Block)
+            blocks = remainder / 9;
+            emeralds = remainder % 9;
+        }
+
+        // Jetzt alles ins Inventar / vor die Füße geben
+        if (cores > 0) {
+            giveStacks(player, CORE_ITEM, cores);
+        }
+        if (blocks > 0) {
+            giveStacks(player, Items.EMERALD_BLOCK, blocks);
+        }
+        if (emeralds > 0) {
+            giveStacks(player, Items.EMERALD, emeralds);
+        }
+    }
+
+    private void giveStacks(ServerPlayer player, Item item, int totalCount) {
+        int remaining = totalCount;
 
         while (remaining > 0) {
-            int stackSize = Math.min(remaining, 64);
-            ItemStack stack = new ItemStack(Items.EMERALD, stackSize);
+            int stackSize = Math.min(remaining, item.getDefaultMaxStackSize());
+            ItemStack stack = new ItemStack(item, stackSize);
 
             boolean added = player.getInventory().add(stack);
             if (!added) {

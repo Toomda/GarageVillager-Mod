@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "EEE",
+    "EEE",
+    "EEE"
+  ],
+  "key": {
+    "E": "minecraft:emerald_block"
+  },
+  "result": {
+    "id": "garagevillager:emerald_core_block",
+    "count": 1
+  }
+}
