@@ -3,6 +3,9 @@
   "package": "com.toomda.garagevillager.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
+    "MerchantContainerMixin",
+    "MerchantMenuAccessor",
+    "MerchantMenuGarageMixin",
     "MerchantResultSlotMixin"
   ],
   "injectors": {

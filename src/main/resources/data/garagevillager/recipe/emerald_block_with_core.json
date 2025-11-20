@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "building",
+  "ingredients": [
+    "garagevillager:emerald_core_block"
+  ],
+  "result": {
+    "count": 9,
+    "id": "minecraft:emerald_block"
+  }
+}

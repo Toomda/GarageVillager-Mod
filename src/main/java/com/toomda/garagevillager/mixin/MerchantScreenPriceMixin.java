@@ -52,42 +52,54 @@ public abstract class MerchantScreenPriceMixin
             return;
         }
 
-        // Result-Slot abfragen – nur zeichnen, wenn ein Trade aktiv ist
-        Slot resultSlot = menu.getSlot(2); // 0,1 = Bezahlung; 2 = Ergebnis
+        Slot resultSlot = menu.getSlot(2);
         if (resultSlot == null || resultSlot.getItem().isEmpty()) {
-            // kein aktiver Trade -> keine Anzeige
             return;
         }
 
         MerchantOffer offer = offers.get(this.shopItem);
-
-        // Dein “logischer Preis” steckt im XP-Feld:
         int price = offer.getXp();
 
-        // theoretischer Wert der Bezahlung (aus den Kosten des Offers)
-        int paid   = emeraldValue(offer.getCostA()) + emeraldValue(offer.getCostB());
-        int change = Math.max(0, paid - price);
+        Slot paySlot0 = menu.getSlot(0);
+        Slot paySlot1 = menu.getSlot(1);
 
+        ItemStack pay0 = paySlot0 != null ? paySlot0.getItem() : ItemStack.EMPTY;
+        ItemStack pay1 = paySlot1 != null ? paySlot1.getItem() : ItemStack.EMPTY;
+
+        int paid = emeraldValue(pay0) + emeraldValue(pay1);
+        int change = Math.max(0, paid - price);
         if (change <= 0) {
-            // wenn kein Wechselgeld anfällt, brauchen wir nichts anzeigen
             return;
         }
 
-        // Position: unter dem Result-Slot
+        // --- Position: under the result slot, right-aligned ---
         int slotScreenX = this.leftPos + resultSlot.x;
         int slotScreenY = this.topPos + resultSlot.y;
 
-        int textX = slotScreenX - 14;          // links bündig mit dem Slot
-        int textY = slotScreenY + 28;     // ein Stück darunter
+        int textY = slotScreenY + 28;
 
-        // Farben (mit Alpha!)
-        int COLOR_LABEL = 0xFFFFFFFF; // weiß
+        int COLOR_LABEL = 0xFFFFFFFF; // white
         int COLOR_VALUE = 0xFFFFD700; // gold
 
         String label = "Change: ";
         String amountStr = String.valueOf(change);
 
-        // "Change:" in weiß, mit Shadow
+        int labelWidth = this.font.width(label);
+        int amountWidth = this.font.width(amountStr);
+        int iconWidth = 16;    // emerald icon size
+        int spacing = 1;       // space between text and icon
+
+        int totalWidth = labelWidth + amountWidth + spacing + iconWidth;
+
+        // right bound = right edge of GUI - 8px padding
+        int rightBound = this.leftPos + this.imageWidth - 8;
+        int textX = rightBound - totalWidth;
+
+        int amountX = textX + labelWidth;
+        int iconX = amountX + amountWidth + spacing;
+        int iconY = textY - 4; // vertically centering icon a bit
+
+        // Draw "Change:" (white, shadow)
         graphics.drawString(
                 this.font,
                 label,
@@ -97,10 +109,7 @@ public abstract class MerchantScreenPriceMixin
                 true
         );
 
-        int labelWidth = this.font.width(label);
-
-        // Zahl in Gold, mit Shadow
-        int amountX = textX + labelWidth;
+        // Draw amount (gold, shadow)
         graphics.drawString(
                 this.font,
                 amountStr,
@@ -110,12 +119,7 @@ public abstract class MerchantScreenPriceMixin
                 true
         );
 
-        int amountWidth = this.font.width(amountStr);
-
-        // kleines Emerald-Icon rechts neben der Zahl
-        int iconX = amountX + amountWidth + 1;
-        int iconY = textY - 4;
-
+        // Draw emerald icon
         graphics.renderFakeItem(new ItemStack(Items.EMERALD), iconX, iconY);
     }
 
@@ -126,5 +130,6 @@ public abstract class MerchantScreenPriceMixin
         if (stack.is(ModBlocks.EMERALD_CORE_BLOCK.get().asItem())) return stack.getCount() * 81;
         return 0;
     }
+
 
 }
