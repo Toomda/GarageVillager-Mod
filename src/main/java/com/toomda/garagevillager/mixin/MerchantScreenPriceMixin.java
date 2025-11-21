@@ -72,34 +72,29 @@ public abstract class MerchantScreenPriceMixin
             return;
         }
 
-        // --- Position: under the result slot, right-aligned ---
-        int slotScreenX = this.leftPos + resultSlot.x;
         int slotScreenY = this.topPos + resultSlot.y;
 
         int textY = slotScreenY + 28;
 
-        int COLOR_LABEL = 0xFFFFFFFF; // white
-        int COLOR_VALUE = 0xFFFFD700; // gold
+        int COLOR_LABEL = 0xFFFFFFFF;
+        int COLOR_VALUE = 0xFFFFD700;
 
         String label = "Change: ";
         String amountStr = String.valueOf(change);
 
         int labelWidth = this.font.width(label);
         int amountWidth = this.font.width(amountStr);
-        int iconWidth = 16;    // emerald icon size
-        int spacing = 1;       // space between text and icon
+        int iconWidth = 16;
+        int spacing = 1;
 
         int totalWidth = labelWidth + amountWidth + spacing + iconWidth;
 
-        // right bound = right edge of GUI - 8px padding
         int rightBound = this.leftPos + this.imageWidth - 8;
         int textX = rightBound - totalWidth;
 
         int amountX = textX + labelWidth;
         int iconX = amountX + amountWidth + spacing;
-        int iconY = textY - 4; // vertically centering icon a bit
-
-        // Draw "Change:" (white, shadow)
+        int iconY = textY - 4;
         graphics.drawString(
                 this.font,
                 label,
@@ -109,7 +104,6 @@ public abstract class MerchantScreenPriceMixin
                 true
         );
 
-        // Draw amount (gold, shadow)
         graphics.drawString(
                 this.font,
                 amountStr,
@@ -119,7 +113,6 @@ public abstract class MerchantScreenPriceMixin
                 true
         );
 
-        // Draw emerald icon
         graphics.renderFakeItem(new ItemStack(Items.EMERALD), iconX, iconY);
     }
 

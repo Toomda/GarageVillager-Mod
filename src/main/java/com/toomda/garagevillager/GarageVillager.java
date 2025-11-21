@@ -40,6 +40,9 @@ public class GarageVillager {
         if(event.getTabKey() == CreativeModeTabs.SPAWN_EGGS) {
             event.accept(ModItems.GARAGE_VILLAGER_SPAWN_EGG.get());
         }
+        if(event.getTabKey() == CreativeModeTabs.BUILDING_BLOCKS) {
+            event.accept(ModBlocks.EMERALD_CORE_BLOCK.get());
+        }
     }
 
     @SubscribeEvent

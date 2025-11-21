@@ -132,21 +132,18 @@ public class GarageVillagerOwnerMenu  extends AbstractContainerMenu {
     public void collectBalance(ServerPlayer player) {
         if (villager == null) return;
 
-        int amount = villager.getEmeraldBalance(); // in Emerald-Einheiten
+        int amount = villager.getEmeraldBalance();
         if (amount <= 0) return;
 
-        // Balance leeren
         villager.setEmeraldBalance(0);
         this.emeraldBalance = 0;
         this.broadcastChanges();
 
-        // Bis 64: nur Emeralds
         if (amount <= 64) {
             giveStacks(player, Items.EMERALD, amount);
             return;
         }
 
-        // Ab hier: Blöcke / Core-Blöcke benutzen
         final Item CORE_ITEM = ModBlocks.EMERALD_CORE_BLOCK.get().asItem();
 
         int cores = 0;
@@ -156,22 +153,16 @@ public class GarageVillagerOwnerMenu  extends AbstractContainerMenu {
         int potentialBlocks = amount / 9;
 
         if (potentialBlocks <= 64) {
-            // Fall 2: 65..576 Emeralds -> nur Emeraldblöcke + Rest-Emeralds
             blocks = potentialBlocks;
             emeralds = amount - blocks * 9;
         } else {
-            // Fall 3: mehr als 64 Blöcke nötig -> Core + Blöcke + Emeralds
-
-            // Maximal viele Core-Blöcke (81 Emeralds pro Block)
             cores = amount / 81;
             int remainder = amount % 81;
 
-            // Vom Rest maximal viele Emeraldblöcke (9 Emeralds pro Block)
             blocks = remainder / 9;
             emeralds = remainder % 9;
         }
 
-        // Jetzt alles ins Inventar / vor die Füße geben
         if (cores > 0) {
             giveStacks(player, CORE_ITEM, cores);
         }

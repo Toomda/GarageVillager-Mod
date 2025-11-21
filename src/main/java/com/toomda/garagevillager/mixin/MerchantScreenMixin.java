@@ -14,10 +14,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/**
- * Fix für den "Blanko-Trade-Button", wenn alle Trades verschwinden,
- * während der MerchantScreen offen ist.
- */
 @Mixin(MerchantScreen.class)
 public abstract class MerchantScreenMixin
         extends net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<MerchantMenu> {

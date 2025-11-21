@@ -49,7 +49,6 @@ public abstract class MerchantContainerMixin implements Container, GarageMerchan
 
     @Inject(method = "updateSellItem", at = @At("HEAD"), cancellable = true)
     private void garagevillager$customUpdateSellItem(CallbackInfo ci) {
-        // Only for our GarageVillager menus
         if (!this.garagevillager$isGarage) {
             return;
         }
@@ -57,7 +56,6 @@ public abstract class MerchantContainerMixin implements Container, GarageMerchan
         ItemStack pay0;
         ItemStack pay1;
 
-        // vanilla pattern: slot 0 / 1 are payment slots
         if (this.getItem(0).isEmpty()) {
             pay0 = this.getItem(1);
             pay1 = ItemStack.EMPTY;
@@ -66,7 +64,6 @@ public abstract class MerchantContainerMixin implements Container, GarageMerchan
             pay1 = this.getItem(1);
         }
 
-        // if both payment slots empty -> clear result
         if (pay0.isEmpty() && pay1.isEmpty()) {
             this.activeOffer = null;
             this.setItem(2, ItemStack.EMPTY);
@@ -100,10 +97,8 @@ public abstract class MerchantContainerMixin implements Container, GarageMerchan
             return;
         }
 
-        // logical price from your entity (stored in xp field)
         int price = offer.getXp();
         if (price <= 0) {
-            // fallback to vanilla if something is weird
             return;
         }
 
@@ -114,12 +109,10 @@ public abstract class MerchantContainerMixin implements Container, GarageMerchan
                         emeraldValue(pay1, coreItem);
 
         if (paidValue >= price) {
-            // enough paid => show result
             this.activeOffer = offer;
             this.setItem(2, offer.assemble());
             this.futureXp = offer.getXp();
         } else {
-            // not enough => disable result slot
             this.activeOffer = null;
             this.setItem(2, ItemStack.EMPTY);
             this.futureXp = 0;

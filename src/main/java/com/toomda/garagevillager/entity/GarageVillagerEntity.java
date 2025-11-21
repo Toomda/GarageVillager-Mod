@@ -38,7 +38,7 @@ import java.util.*;
 
 public class GarageVillagerEntity extends Villager {
     private UUID ownerUuid;
-    private String ownerName = "Garage";   // <--- neu
+    private String ownerName = "Garage";
     private final SimpleContainer inventory = new SimpleContainer(17);
     private final int[] prices = new int[17];
     private int emeraldBalance = 0;
@@ -65,7 +65,7 @@ public class GarageVillagerEntity extends Villager {
         this.offers.clear();
         this.offerToSlot.clear();
 
-        final int MAX_PRICE = 128 * 81; // 10368
+        final int MAX_PRICE = 128 * 81;
         final Item CORE_ITEM = ModBlocks.EMERALD_CORE_BLOCK.get().asItem();
 
         for (int i = 0; i < this.inventory.getContainerSize(); i++) {
@@ -86,11 +86,9 @@ public class GarageVillagerEntity extends Villager {
             ItemCost costB = null;
 
             if (price <= 64) {
-                // 1) nur Emeralds
                 costA = new ItemCost(Items.EMERALD, price);
 
             } else if (price <= (64 * 9 + 64)) {
-                // 2) 65..640: Blöcke + evtl. Emeralds (wie bisher)
                 int maxBlocks = Math.min(64, price / 9);
                 int blocks = 0;
                 int emeralds = price;
@@ -115,8 +113,7 @@ public class GarageVillagerEntity extends Villager {
                 }
 
             } else if (price <= (128 * 9)) {
-                // 3) 641..1152: nur Emerald Blöcke in zwei Slots
-                int totalBlocks = (price + 8) / 9; // ceil(price / 9)
+                int totalBlocks = (price + 8) / 9;
 
                 int blocksA = Math.min(64, totalBlocks);
                 int blocksB = totalBlocks - blocksA;
@@ -128,15 +125,10 @@ public class GarageVillagerEntity extends Villager {
                 }
 
             } else {
-                // 4) >1152: Core-Block + Block Kombinationen (max. 2 Slots)
-                //    Suche minimalen Wert >= price mit:
-                //    Slot A: Block ODER Core
-                //    Slot B: leer / Block / Core
                 int bestValue = Integer.MAX_VALUE;
                 ItemCost bestA = null;
                 ItemCost bestB = null;
 
-                // Slot A: EmeraldBlock (9) oder Core (81)
                 for (int typeA = 0; typeA < 2; typeA++) {
                     Item itemA = (typeA == 0) ? Items.EMERALD_BLOCK : CORE_ITEM;
                     int unitA = (typeA == 0) ? 9 : 81;
@@ -144,14 +136,12 @@ public class GarageVillagerEntity extends Villager {
                     for (int countA = 1; countA <= 64; countA++) {
                         int baseA = unitA * countA;
 
-                        // Fall: nur Slot A belegt
                         if (baseA >= price && baseA < bestValue) {
                             bestValue = baseA;
                             bestA = new ItemCost(itemA, countA);
                             bestB = null;
                         }
 
-                        // Slot B: nichts, Block oder Core
                         for (int typeB = 0; typeB < 2; typeB++) {
                             Item itemB = (typeB == 0) ? Items.EMERALD_BLOCK : CORE_ITEM;
                             int unitB = (typeB == 0) ? 9 : 81;
@@ -168,7 +158,6 @@ public class GarageVillagerEntity extends Villager {
                     }
                 }
 
-                // Sicherheits-Fallback (sollte nie nötig sein)
                 if (bestA == null) {
                     bestA = new ItemCost(CORE_ITEM, 64);
                     bestB = new ItemCost(CORE_ITEM, 64);
@@ -269,7 +258,6 @@ public class GarageVillagerEntity extends Villager {
     public void notifyTrade(MerchantOffer offer) {
         super.notifyTrade(offer);
 
-        // Only server should modify inventory / balance
         if (this.level().isClientSide()) {
             return;
         }
@@ -280,16 +268,13 @@ public class GarageVillagerEntity extends Villager {
             int price = this.prices[slotIndex];
 
             if (price > 0) {
-                // Add only the "logical" price to the villager balance
                 this.addEmeraldBalance(price);
             }
 
-            // Remove the sold item from the garage inventory
             this.inventory.setItem(slotIndex, ItemStack.EMPTY);
             this.prices[slotIndex] = 0;
         }
 
-        // Rebuild & sync offers for other buyers
         this.rebuildOffersFromInventory();
         syncOffersToOpenBuyers_afterPurchase();
     }
@@ -301,23 +286,6 @@ public class GarageVillagerEntity extends Villager {
             return 0;
         }
         return this.prices[idx];
-    }
-
-
-    private void giveEmeraldChange(ServerPlayer player, int change) {
-        int remaining = change;
-
-        while (remaining > 0) {
-            int stackSize = Math.min(remaining, 64);
-            ItemStack refund = new ItemStack(Items.EMERALD, stackSize);
-
-            boolean added = player.getInventory().add(refund);
-            if (!added) {
-                player.drop(refund, false);
-            }
-
-            remaining -= stackSize;
-        }
     }
 
     private void syncOffersToOpenBuyers_afterPurchase() {

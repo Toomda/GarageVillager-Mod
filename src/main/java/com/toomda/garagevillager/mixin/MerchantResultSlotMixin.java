@@ -1,9 +1,7 @@
-// com.toomda.garagevillager.mixin.MerchantResultSlotMixin.java
 package com.toomda.garagevillager.mixin;
 
 import com.toomda.garagevillager.entity.GarageVillagerEntity;
 import com.toomda.garagevillager.register.ModBlocks;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Player;
@@ -22,7 +20,6 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(MerchantResultSlot.class)
 public abstract class MerchantResultSlotMixin extends Slot {
@@ -49,14 +46,12 @@ public abstract class MerchantResultSlotMixin extends Slot {
             return;
         }
 
-        // only our GarageVillager gets special logic
         if (!(this.merchant instanceof GarageVillagerEntity garageVillager)) {
             return;
         }
 
         MerchantOffer offer = this.slots.getActiveOffer();
         if (offer == null) {
-            // no active offer -> let vanilla handle (but should not happen)
             return;
         }
 
@@ -74,28 +69,21 @@ public abstract class MerchantResultSlotMixin extends Slot {
                 emeraldValue(pay0, coreItem) +
                         emeraldValue(pay1, coreItem);
 
-        // safety: if somehow not enough -> cancel trade
         if (paidValue < price) {
-            // optionally clear result slot here
             ci.cancel();
             return;
         }
 
         int change = paidValue - price;
 
-        // 1) give change as emeralds
         if (change > 0) {
             giveEmeraldChange(serverPlayer, change);
         }
 
-        // 2) remove only currency items from the payment slots
         clearCurrencySlot(0, coreItem);
         clearCurrencySlot(1, coreItem);
-
-        // 3) run villager trade logic (adds emeraldBalance, clears sold item, rebuilds offers, syncs GUI)
         garageVillager.notifyTrade(offer);
 
-        // fully handle trade on our own, skip vanilla onTake
         ci.cancel();
     }
 
@@ -119,8 +107,6 @@ public abstract class MerchantResultSlotMixin extends Slot {
         if (!s.isEmpty() && isCurrency(s, coreItem)) {
             this.slots.setItem(idx, ItemStack.EMPTY);
         }
-        // non-currency items (e.g. player accidentally put a diamond)
-        // remain in the slot
     }
 
     private void giveEmeraldChange(ServerPlayer player, int change) {
@@ -128,18 +114,14 @@ public abstract class MerchantResultSlotMixin extends Slot {
 
         int remaining = change;
 
-        // 1) Core-Blöcke (81 Emeralds)
         int cores = remaining / 81;
         remaining -= cores * 81;
 
-        // 2) Emerald-Blöcke (9 Emeralds)
         int blocks = remaining / 9;
         remaining -= blocks * 9;
 
-        // 3) Restliche Emeralds (1 Emerald)
         int emeralds = remaining;
 
-        // Jetzt alles als Itemstacks geben
         if (cores > 0) {
             giveItemStacks(player, coreItem, cores);
         }
@@ -153,7 +135,7 @@ public abstract class MerchantResultSlotMixin extends Slot {
 
     private void giveItemStacks(ServerPlayer player, Item item, int count) {
         int remaining = count;
-        int maxStack = item.getDefaultMaxStackSize(); // i.d.R. 64
+        int maxStack = item.getDefaultMaxStackSize();
 
         while (remaining > 0) {
             int stackSize = Math.min(remaining, maxStack);

@@ -1,4 +1,3 @@
-// com.toomda.garagevillager.mixin.MerchantMenuAccessor.java
 package com.toomda.garagevillager.mixin;
 
 import net.minecraft.world.inventory.MerchantContainer;

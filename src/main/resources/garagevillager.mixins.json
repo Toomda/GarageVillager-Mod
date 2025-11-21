@@ -5,6 +5,7 @@
   "mixins": [
     "MerchantContainerMixin",
     "MerchantMenuAccessor",
+    "MerchantMenuCurrencyMixin",
     "MerchantMenuGarageMixin",
     "MerchantResultSlotMixin"
   ],
